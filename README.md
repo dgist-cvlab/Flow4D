@@ -8,7 +8,7 @@ This code is based on DeFlow. <br>
 Please follow the installation instructions from the [DeFlow repository](https://github.com/KTH-RPL/DeFlow).
 
 Additionally, you need to install `spconv 2.3.6`.<br>
-You can find the installation instructions here: [spconv 2.3.6](https://github.com/traveller59/spconv).
+You can find the installation instructions here: [spconv](https://github.com/traveller59/spconv).
 
 
 ## Training
