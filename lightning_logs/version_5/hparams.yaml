@@ -1,0 +1,35 @@
+cfg:
+  model:
+    name: flow4D
+    target:
+      _target_: scripts.network.models.flow4D.Flow4D
+      voxel_size:
+      - 0.2
+      - 0.2
+      - 0.2
+      point_cloud_range:
+      - -51.2
+      - -51.2
+      - -2.2
+      - 51.2
+      - 51.2
+      - 4.2
+      num_frames: 5
+      grid_feature_size:
+      - 512
+      - 512
+      - 32
+    val_monitor: val/Dynamic/Mean
+  slurm_id: 0
+  wandb_mode: offline
+  dataset_path: /data/datasets/argoverse2/argoverse2/preprocess/sensor
+  output: 0709_001633_13__0712_010218
+  checkpoint: ../../Flow4D/logs/wandb/0709_001633/checkpoints/13__0.169_0.011_0.022_0.046_0.005_0.014_0.76.ckpt
+  av2_mode: test
+  save_res: true
+  submit_version: '2024'
+  num_frames: 5
+  loss_fn: deflowLoss
+  gpus: 1
+  seed: 42069
+eval: true

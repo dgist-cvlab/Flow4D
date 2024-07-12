@@ -39,7 +39,6 @@ import os, sys
 BASE_DIR = os.path.abspath(os.path.join( os.path.dirname( __file__ ), '..' ))
 sys.path.append(BASE_DIR)
 from dataprocess.misc_data import create_reading_index
-from scripts.utils.av2_eval import read_ego_SE3_sensor
 
 BOUNDING_BOX_EXPANSION: Final = 0.2
 CATEGORY_TO_INDEX: Final = {
@@ -84,16 +83,11 @@ def create_eval_mask(data_mode: str, output_dir_: Path, mask_dir: str):
 
 def read_pose_pc_ground(data_dir: Path, log_id: str, timestamp: int, avm: ArgoverseStaticMap):
     log_poses_df = read_feather(data_dir / log_id / "city_SE3_egovehicle.feather")
-    # more detail: https://argoverse.github.io/user-guide/datasets/lidar.html#sensor-suite
-    ego2sensor_pose = read_ego_SE3_sensor((data_dir / log_id))['up_lidar']
     filtered_log_poses_df = log_poses_df[log_poses_df["timestamp_ns"].isin([timestamp])]
     pose = convert_pose_dataframe_to_SE3(filtered_log_poses_df.loc[filtered_log_poses_df["timestamp_ns"] == timestamp])
     pc = Sweep.from_feather(data_dir / log_id / "sensors" / "lidar" / f"{timestamp}.feather").xyz
     # transform to city coordinate since sweeps[0].xyz is in ego coordinate to get ground mask
     is_ground = avm.get_ground_points_boolean(pose.transform_point_cloud(pc))
-
-    # NOTE(SeFlow): transform to sensor coordinate, since some ray-casting based methods need sensor coordinate
-    pc = ego2sensor_pose.inverse().transform_point_cloud(pc) 
     return pc, pose, is_ground
 
 def compute_sceneflow(data_dir: Path, log_id: str, timestamps: Tuple[int, int]) -> Dict[str, Union[np.ndarray, SE3]]:
@@ -265,14 +259,10 @@ def main(
     av2_type: str = "sensor",
     data_mode: str = "test",
     mask_dir: str = "/home/kin/data/av2/3d_scene_flow",
-    nproc: int = (multiprocessing.cpu_count() - 1),
-    only_index: bool = False,
+    nproc: int = (multiprocessing.cpu_count() - 1)
 ):
     data_root_ = Path(argo_dir) / av2_type/ data_mode
     output_dir_ = Path(output_dir) / av2_type / data_mode
-    if only_index:
-        create_reading_index(output_dir_)
-        return
     output_dir_.mkdir(exist_ok=True, parents=True)
     process_logs(data_root_, output_dir_, nproc)
     create_reading_index(output_dir_)

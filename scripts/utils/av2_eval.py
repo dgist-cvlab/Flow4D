@@ -74,63 +74,6 @@ BUCKETED_METACATAGORIES = {
     "OTHER_VEHICLES": OTHER_VEHICLES,
 }
 
-import av2.geometry.geometry as geometry_utils
-from av2.geometry.se3 import SE3
-from av2.utils.typing import NDArrayFloat
-from av2.utils.io import read_feather
-
-# Mapping from egovehicle time in nanoseconds to egovehicle pose.
-TimestampedCitySE3EgoPoses = Dict[int, SE3]
-
-# Mapping from sensor name to sensor pose.
-SensorPosesMapping = Dict[str, SE3]
-
-def read_ego_SE3_sensor(log_dir: Path) -> SensorPosesMapping:
-    """Read the sensor poses for the given log.
-
-    The sensor pose defines an SE3 transformation from the sensor reference frame to the egovehicle reference frame.
-    Mathematically we define this transformation as: $$ego_SE3_sensor$$.
-
-    In other words, when this transformation is applied to a set of points in the sensor reference frame, they
-    will be transformed to the egovehicle reference frame.
-
-    Example (1).
-        points_ego = ego_SE3_sensor(points_sensor) apply the SE3 transformation to points in the sensor reference frame.
-
-    Example (2).
-        sensor_SE3_ego = ego_SE3_sensor^{-1} take the inverse of the SE3 transformation.
-        points_sensor = sensor_SE3_ego(points_ego) apply the SE3 transformation to points in the ego reference frame.
-
-    Extrinsics:
-        sensor_name: Name of the sensor.
-        qw: scalar component of a quaternion.
-        qx: X-axis coefficient of a quaternion.
-        qy: Y-axis coefficient of a quaternion.
-        qz: Z-axis coefficient of a quaternion.
-        tx_m: X-axis translation component.
-        ty_m: Y-axis translation component.
-        tz_m: Z-axis translation component.
-
-    Args:
-        log_dir: Path to the log directory.
-
-    Returns:
-        Mapping from sensor name to sensor pose.
-    """
-    ego_SE3_sensor_path = Path(log_dir, "calibration", "egovehicle_SE3_sensor.feather")
-    ego_SE3_sensor = read_feather(ego_SE3_sensor_path)
-    rotations = geometry_utils.quat_to_mat(
-        ego_SE3_sensor.loc[:, ["qw", "qx", "qy", "qz"]].to_numpy()
-    )
-    translations = ego_SE3_sensor.loc[:, ["tx_m", "ty_m", "tz_m"]].to_numpy()
-    sensor_names = ego_SE3_sensor.loc[:, "sensor_name"].to_numpy()
-
-    sensor_name_to_pose: SensorPosesMapping = {
-        name: SE3(rotation=rotations[i], translation=translations[i])
-        for i, name in enumerate(sensor_names)
-    }
-    return sensor_name_to_pose
-
 @unique
 class SceneFlowMetricType(str, Enum):
     """Scene Flow metrics."""
@@ -757,10 +700,8 @@ def evaluate(annotations_dir: str, predictions_dir: str) -> Dict[str, float]:
 
 def write_output_file(
     flow: NDArrayFloat,
-    is_dynamic: NDArrayBool,
     sweep_uuid: Tuple[str, int],
     output_dir: Path,
-    leaderboard_version: int = 1,
 ) -> None:
     """Write an output predictions file in the correct format for submission.
 
@@ -769,36 +710,82 @@ def write_output_file(
         is_dynamic: (N,) Dynamic segmentation prediction.
         sweep_uuid: Identifier of the sweep being predicted (log_id, timestamp_ns).
         output_dir: Top level directory containing all predictions.
-        leaderboard_version: Version of the leaderboard format to use.
-            version 1 for: https://eval.ai/web/challenges/challenge-page/2010/evaluation
-            version 2 for: https://eval.ai/web/challenges/challenge-page/2210/evaluation
     """
     output_log_dir = output_dir / sweep_uuid[0]
     output_log_dir.mkdir(exist_ok=True, parents=True)
     fx_m = flow[:, 0].astype(np.float16)
     fy_m = flow[:, 1].astype(np.float16)
     fz_m = flow[:, 2].astype(np.float16)
-    if leaderboard_version == 1:
 
-        output = pd.DataFrame(
-            {
-                "flow_tx_m": fx_m,
-                "flow_ty_m": fy_m,
-                "flow_tz_m": fz_m,
-                "is_dynamic": is_dynamic.astype(bool),
-            }
-        )
-        output.to_feather(output_log_dir / f"{sweep_uuid[1]}.feather")
-    elif leaderboard_version == 2:
-        output = pd.DataFrame(
-            {
-                "is_valid": np.ones_like(fx_m, dtype=bool),
-                "flow_tx_m": fx_m,
-                "flow_ty_m": fy_m,
-                "flow_tz_m": fz_m,
-            }
-        )
-        output.to_feather(output_log_dir / f"{sweep_uuid[1]}.feather")
+    output = pd.DataFrame(
+        {
+            "is_valid": np.ones(flow.shape[0], dtype=bool), #np.zeros_like(is_dynamic, dtype=bool) #np.ones_like(is_dynamic, dtype=bool)
+            "flow_tx_m": fx_m,
+            "flow_ty_m": fy_m,
+            "flow_tz_m": fz_m
+        }
+    )
+
+    output.to_feather(output_log_dir / f"{sweep_uuid[1]}.feather")
+
+
+def write_output_file_2023(
+    flow: NDArrayFloat,
+    is_dynamic: NDArrayBool,
+    sweep_uuid: Tuple[str, int],
+    output_dir: Path,
+) -> None:
+    """Write an output predictions file in the correct format for submission.
+
+    Args:
+        flow: (N,3) Flow predictions.
+        is_dynamic: (N,) Dynamic segmentation prediction.
+        sweep_uuid: Identifier of the sweep being predicted (log_id, timestamp_ns).
+        output_dir: Top level directory containing all predictions.
+    """
+    output_log_dir = output_dir / sweep_uuid[0]
+    output_log_dir.mkdir(exist_ok=True, parents=True)
+    fx_m = flow[:, 0].astype(np.float16)
+    fy_m = flow[:, 1].astype(np.float16)
+    fz_m = flow[:, 2].astype(np.float16)
+    output = pd.DataFrame(
+        {
+            "flow_tx_m": fx_m,
+            "flow_ty_m": fy_m,
+            "flow_tz_m": fz_m,
+            "is_dynamic": is_dynamic.astype(bool),
+        }
+    )
+    output.to_feather(output_log_dir / f"{sweep_uuid[1]}.feather")
+
+
+def write_output_file_v2(
+    flow: NDArrayFloat,
+    sweep_uuid: Tuple[str, int],
+    output_dir: Path,
+) -> None:
+    """Write an output predictions file in the correct format for submission.
+
+    Args:
+        flow: (N,3) Flow predictions.
+        is_dynamic: (N,) Dynamic segmentation prediction.
+        sweep_uuid: Identifier of the sweep being predicted (log_id, timestamp_ns).
+        output_dir: Top level directory containing all predictions.
+    """
+    output_log_dir = output_dir / sweep_uuid[0]
+    output_log_dir.mkdir(exist_ok=True, parents=True)
+    fx_m = flow[:, 0].astype(np.float16)
+    fy_m = flow[:, 1].astype(np.float16)
+    fz_m = flow[:, 2].astype(np.float16)
+    output = pd.DataFrame(
+        {
+            "is_valid":  np.ones(flow.shape[0], dtype=bool),
+            "flow_tx_m": fx_m,
+            "flow_ty_m": fy_m,
+            "flow_tz_m": fz_m,
+        }
+    )
+    output.to_feather(output_log_dir / f"{sweep_uuid[1]}.feather")
     
 from zipfile import ZipFile
 from torch import BoolTensor
