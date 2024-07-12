@@ -1,6 +1,6 @@
 # Flow4D: Leveraging 4D Voxel Network for LiDAR Scene Flow Estimation
 
-- [Flow4D](https://arxiv.org/pdf/2407.07995)
+This repository contains the code for the [Flow4D paper (Arxiv)](https://arxiv.org/pdf/2407.07995)
 
 ## Requirements
 
