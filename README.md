@@ -32,7 +32,7 @@ Replace `path_to_checkpoint` with the actual path to your checkpoint file and ch
 
 
 ## Gratitude
-This code is based on the [DeFlow code](https://github.com/KTH-RPL/DeFlow) by Kin-Zhang.
+This code is based on the [DeFlow code](https://github.com/KTH-RPL/DeFlow) by Qingwen Zhang.
 We extend our deepest gratitude to her.<br>
 Additionally, we would like to express our sincere thanks to Kyle Vedder et al. for hosting and providing extensive support for [Argoverse2 2024 Scene Flow Challenge](https://www.argoverse.org/sceneflow.html)
 
