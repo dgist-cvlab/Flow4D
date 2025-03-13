@@ -4,6 +4,7 @@ This repository contains the code for the [Flow4D paper (RA-L 2025)](https://iee
 
 
 **Notice:** Flow4D has been integrated into [OpenSceneFlow](https://github.com/KTH-RPL/OpenSceneFlow).
+
 Please visit the OpenSceneFlow repository for the latest updates and developments.
 
 
