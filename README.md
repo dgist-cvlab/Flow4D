@@ -5,9 +5,11 @@ This repository contains the code for the [Flow4D paper (RA-L 2025)](https://iee
 
 ## Notice
 
-Flow4D has been integrated into [OpenSceneFlow](https://github.com/KTH-RPL/OpenSceneFlow).<br>
-Please visit the OpenSceneFlow repository for the latest updates and developments.
+**Flow4D has been integrated into [OpenSceneFlow](https://github.com/KTH-RPL/OpenSceneFlow).**
+Please visit the [OpenSceneFlow](https://github.com/KTH-RPL/OpenSceneFlow) repository for the latest updates and developments.
 
+This repo saved README, and quick core file in Flow4D for a quick reference.
+The old source code branch is also [available here](https://github.com/dgist-cvlab/Flow4D/tree/source).
 
 ## Requirements
 
@@ -23,7 +25,7 @@ You can find the installation instructions here: [spconv](https://github.com/tra
 To train the model, use the following command:
 
 ```bash
-python 1_train_flow4D.py
+python train.py model=flow4d lr=1e-3 epochs=15 batch_size=8 num_frames=5 loss_fn=deflowLoss "voxel_size=[0.2, 0.2, 0.2]" "point_cloud_range=[-51.2, -51.2, -3.2, 51.2, 51.2, 3.2]"
 ```
 
 
@@ -32,7 +34,7 @@ python 1_train_flow4D.py
 To perform inference, use the following command:
 
 ```bash
-python 2_eval_flow4D.py checkpoint=path_to_checkpoint av2_mode=(val, test)
+python eval.py checkpoint=path_to_checkpoint av2_mode=(val, test)
 ```
 
 Replace `path_to_checkpoint` with the actual path to your checkpoint file and choose either `val` or `test`.
